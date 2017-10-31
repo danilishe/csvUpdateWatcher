@@ -34,17 +34,17 @@ public class CsvUpdateReader {
     }
 
 
-    public List<HashMap<String, String>> check() {
-        List<HashMap<String, String>> result = new ArrayList<>();
+    public List<HashMap<String, String>> getChanges() {
+        List<HashMap<String, String>> changesList = new ArrayList<>();
         if (isFileChangesDetected()) {
 
             if (isLogging) System.out.println("Обнаружено изменение файла.");
-            putChangesIn(result);
+            putChangesIn(changesList);
         }
-        return result;
+        return changesList;
     }
 
-    private void putChangesIn(List<HashMap<String, String>> result) {
+    private void putChangesIn(List<HashMap<String, String>> changesList) {
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 
@@ -65,7 +65,7 @@ public class CsvUpdateReader {
 
                 if (allColumnPresent) {
                     lastCheckedRow++;
-                    result.add(packVarsToHashMap(valList));
+                    changesList.add(packVarsToHashMap(valList));
                 } else {
                     if (isLogging)
                         System.err.println("В строке [" + (lastCheckedRow + 1) + "] несовпадение количества аргументов. (" + valList.size() + " из " + headers.size() + ")");
@@ -74,8 +74,9 @@ public class CsvUpdateReader {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
         lastFileSize = file.length();
-        if (isLogging) System.out.println("Считано " + result.size() + " строк.");
+        if (isLogging) System.out.println("Считано " + changesList.size() + " строк.");
     }
 
     private HashMap<String, String> packVarsToHashMap(List<String> valList) {

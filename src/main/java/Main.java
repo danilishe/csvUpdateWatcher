@@ -9,7 +9,7 @@ public class Main {
         cur.enableLog();
 
         while (true) {
-            List<HashMap<String, String>> data = cur.check();
+            List<HashMap<String, String>> data = cur.getChanges();
             if (!data.isEmpty()) {
                 printData(data);
             } else {
