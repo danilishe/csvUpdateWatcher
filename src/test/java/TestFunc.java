@@ -4,13 +4,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.FileNotFoundException;
 import java.util.List;
 
 public class TestFunc {
     CsvUpdateReader reader;
 
     @Before
-    public void init() {
+    public void init() throws FileNotFoundException{
         reader = new CsvUpdateReader("src\\main\\resources\\example.csv");
     }
 

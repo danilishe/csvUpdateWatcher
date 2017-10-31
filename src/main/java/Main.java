@@ -1,14 +1,15 @@
+import java.io.FileNotFoundException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 public class Main {
-    public static void main(String[] args) throws InterruptedException{
+    public static void main(String[] args) throws InterruptedException, FileNotFoundException{
         CsvUpdateReader cur = new CsvUpdateReader("src\\main\\resources\\example.csv");
         cur.enableLog();
 
         while (true) {
-            List<HashMap<String, String>> data = cur.read();
+            List<HashMap<String, String>> data = cur.check();
             if (!data.isEmpty()) {
                 printData(data);
             } else {

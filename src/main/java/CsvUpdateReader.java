@@ -1,7 +1,4 @@
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.util.*;
 
 public class CsvUpdateReader {
@@ -13,76 +10,103 @@ public class CsvUpdateReader {
     private List<String> headers;
     private boolean isLogging = false;
 
-    public CsvUpdateReader(String fileName) {
+    public CsvUpdateReader(String fileName) throws FileNotFoundException {
         file = new File(fileName);
         lastFileSize = file.length();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+
+            //сохраняем заголовки
             headers = parseLine(reader.readLine());
             lastCheckedRow = 1;
 
+            // проходим до конца файла, считая количество строк
             while (reader.readLine() != null) {
                 lastCheckedRow++;
             }
 
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (IOException e) {
+            System.err.println(e.getMessage());
+            throw new FileNotFoundException();
         }
-        if (isLogging) System.out.println("Файл загружен. Обнаружено " + headers.size() + " заголовков, считано строк: " + lastCheckedRow + " размер: " + file.length());
+        if (isLogging)
+            System.out.println("Файл загружен. Обнаружено " + headers.size() + " заголовков, считано строк: " + lastCheckedRow + " размер: " + file.length());
     }
 
 
-    public List<HashMap<String, String>> read() {
+    public List<HashMap<String, String>> check() {
         List<HashMap<String, String>> result = new ArrayList<>();
-        if (file.length() != lastFileSize) {
+        if (isFileChangesDetected()) {
+
             if (isLogging) System.out.println("Обнаружено изменение файла.");
-            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-
-                // сбрасываем счётчик линии, если файл стал меньше
-                if (file.length() < lastFileSize) {
-                    lastCheckedRow = 1;
-                }
-
-                skipReaded(reader);
-
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    List<String> valList = parseLine(line);
-                    if (valList.size() == headers.size()) {
-                        lastCheckedRow++;
-                        HashMap<String, String> hashMapFromLine = new HashMap<>();
-                        for (int i = 0; i < headers.size(); i++) {
-                            hashMapFromLine.put(headers.get(i), valList.get(i));
-                        }
-                        result.add(hashMapFromLine);
-                    } else {
-                        if (isLogging) System.err.println("В строке [" + (lastCheckedRow + 1) + "] несовпадение количества аргументов. (" + valList.size() + " из " + headers.size() + ")");
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            lastFileSize = file.length();
-            if (isLogging) System.out.println("Считано " + result.size() + " строк.");
+            putChangesIn(result);
         }
         return result;
     }
+
+    private void putChangesIn(List<HashMap<String, String>> result) {
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+
+            // сбрасываем счётчик линии, если файл стал меньше
+            if (file.length() < lastFileSize) {
+                lastCheckedRow = 1;
+            }
+
+            skipReadedRows(reader);
+
+
+            while (reader.ready()) {
+                String line = reader.readLine();
+
+                List<String> valList = parseLine(line);
+
+                boolean allColumnPresent = valList.size() == headers.size();
+
+                if (allColumnPresent) {
+                    lastCheckedRow++;
+                    result.add(packVarsToHashMap(valList));
+                } else {
+                    if (isLogging)
+                        System.err.println("В строке [" + (lastCheckedRow + 1) + "] несовпадение количества аргументов. (" + valList.size() + " из " + headers.size() + ")");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        lastFileSize = file.length();
+        if (isLogging) System.out.println("Считано " + result.size() + " строк.");
+    }
+
+    private HashMap<String, String> packVarsToHashMap(List<String> valList) {
+        HashMap<String, String> hashMapFromLine = new HashMap<>();
+        for (int i = 0; i < headers.size(); i++) {
+            hashMapFromLine.put(headers.get(i), valList.get(i));
+        }
+        return hashMapFromLine;
+    }
+
+
+    private boolean isFileChangesDetected() {
+        return file.length() != lastFileSize;
+    }
+
     public void disableLog() {
         isLogging = false;
     }
+
     public void enableLog() {
         isLogging = true;
     }
 
-
-    private void skipReaded(BufferedReader reader) throws IOException {
+    private void skipReadedRows(BufferedReader reader) throws IOException {
         for (int currentRow = 0; currentRow < lastCheckedRow; currentRow++) {
             // пропускаем считанное
             reader.readLine();
         }
     }
 
-    public List<String> parseLine(String cvsLine) {
+    protected List<String> parseLine(String cvsLine) {
 
         List<String> result = new ArrayList<>();
 
@@ -116,6 +140,7 @@ public class CsvUpdateReader {
                 }
             }
         }
+
         result.add(curVal.toString()); // добавляем последнее значение в строке
         return result;
     }
