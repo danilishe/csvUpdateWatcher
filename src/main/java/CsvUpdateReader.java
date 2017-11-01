@@ -34,17 +34,22 @@ public class CsvUpdateReader {
     }
 
 
-    public List<HashMap<String, String>> getChanges() {
+    public List<HashMap<String, String>> getUpdates() {
         List<HashMap<String, String>> changesList = new ArrayList<>();
         if (isFileChangesDetected()) {
 
             if (isLogging) System.out.println("Обнаружено изменение файла.");
-            putChangesIn(changesList);
+
+            changesList = getChanges();
+
+            if (isLogging) System.out.println("Считано " + changesList.size() + " строк.");
         }
         return changesList;
     }
 
-    private void putChangesIn(List<HashMap<String, String>> changesList) {
+    private List<HashMap<String, String>> getChanges() {
+
+        List<HashMap<String, String>> changesList = new ArrayList<>();
 
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 
@@ -75,7 +80,8 @@ public class CsvUpdateReader {
         }
 
         lastFileSize = file.length();
-        if (isLogging) System.out.println("Считано " + changesList.size() + " строк.");
+
+        return changesList;
     }
 
     private HashMap<String, String> packVarsToHashMap(List<String> valList) {
@@ -109,11 +115,6 @@ public class CsvUpdateReader {
     protected List<String> parseLine(String cvsLine) {
 
         List<String> result = new ArrayList<>();
-
-        //if empty, return!
-        if (cvsLine == null || cvsLine.isEmpty()) {
-            return result;
-        }
 
         StringBuffer curVal = new StringBuffer();
         boolean inQuotes = false;
